@@ -26,8 +26,6 @@ fun App() {
 		var isDecimal by remember { mutableStateOf(false) }
 		var isNegative by remember { mutableStateOf(false) }
 		fun generateNumberOnClick(x: Int): () -> Unit = {
-			// FIXME negative decimals
-			// FIXME -0?
 			val signedX = (if (isNegative) -x else x).toBigDecimal()
 			val ten = 10.toBigDecimal()
 			currentNumber =
