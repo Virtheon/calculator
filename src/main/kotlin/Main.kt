@@ -84,7 +84,7 @@ fun NumberPad(buttons: List<ButtonValues>) {
 				colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
 				onClick = buttons[index].onClick
 			) {
-				Text(buttons[index].buttonText)
+				Text(buttons[index].buttonText, fontSize = 30.sp)
 			}
 		}
 	}
