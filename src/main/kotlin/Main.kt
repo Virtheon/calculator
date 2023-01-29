@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import java.math.MathContext
+import java.math.RoundingMode
 
 data class ButtonValues(val buttonText: String, val onClick: () -> Unit)
 
@@ -22,8 +23,8 @@ fun App() {
 	MaterialTheme() {
 		var mathContext by remember { mutableStateOf(MathContext(0)) }
 		var currentNumber by remember { mutableStateOf(0.toBigDecimal(mathContext)) }
+		var isDecimal by remember { mutableStateOf(false) }
 		fun generateNumberOnClick(x: Int): () -> Unit = {
-			// FIXME make .0something possible
 			// FIXME negative decimals
 			// FIXME -0?
 			val signedX = (if (x < 0) -x else x).toBigDecimal()
@@ -31,15 +32,14 @@ fun App() {
 			currentNumber =
 				if (currentNumber == 0.toBigDecimal())
 					signedX
-				else if (currentNumber.scale() == 1 && currentNumber.toString().endsWith('0'))
-					currentNumber + signedX.scaleByPowerOfTen(-currentNumber.scale())
-				else if (currentNumber.scale() > 0)
+				else if (isDecimal)
 					currentNumber + signedX.scaleByPowerOfTen(-(currentNumber.scale() + 1))
 				else
 					currentNumber * ten + signedX
 		}
 		Column {
-			Text(currentNumber.toString(), fontSize = 50.sp)
+			val possibleExtraDot = if (isDecimal && currentNumber.scale() == 0) "." else ""
+			Text(currentNumber.toString() + possibleExtraDot, fontSize = 50.sp)
 			NumberPad(
 				listOf(
 					ButtonValues("1", generateNumberOnClick(1)),
@@ -54,12 +54,10 @@ fun App() {
 					ButtonValues("+/-") { currentNumber = -currentNumber },
 					ButtonValues("0", generateNumberOnClick(0)),
 					ButtonValues(".") {
-						currentNumber =
-							if (currentNumber.scale() == 0) {
-								currentNumber.setScale(1)
-							} else {
-								currentNumber.setScale(0)
-							}
+						isDecimal = !isDecimal
+						if (!isDecimal) {
+							currentNumber = currentNumber.setScale(0, RoundingMode.DOWN)
+						}
 					},
 				)
 			)
