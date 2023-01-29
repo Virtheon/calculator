@@ -24,10 +24,11 @@ fun App() {
 		var mathContext by remember { mutableStateOf(MathContext(0)) }
 		var currentNumber by remember { mutableStateOf(0.toBigDecimal(mathContext)) }
 		var isDecimal by remember { mutableStateOf(false) }
+		var isNegative by remember { mutableStateOf(false) }
 		fun generateNumberOnClick(x: Int): () -> Unit = {
 			// FIXME negative decimals
 			// FIXME -0?
-			val signedX = (if (x < 0) -x else x).toBigDecimal()
+			val signedX = (if (isNegative) -x else x).toBigDecimal()
 			val ten = 10.toBigDecimal()
 			currentNumber =
 				if (currentNumber == 0.toBigDecimal())
@@ -38,8 +39,9 @@ fun App() {
 					currentNumber * ten + signedX
 		}
 		Column {
+			val possibleExtraNegative = if (isNegative && currentNumber.compareTo(0.toBigDecimal()) == 0) "-" else ""
 			val possibleExtraDot = if (isDecimal && currentNumber.scale() == 0) "." else ""
-			Text(currentNumber.toString() + possibleExtraDot, fontSize = 50.sp)
+			Text(possibleExtraNegative + currentNumber.toString() + possibleExtraDot, fontSize = 50.sp)
 			NumberPad(
 				listOf(
 					ButtonValues("1", generateNumberOnClick(1)),
@@ -51,7 +53,10 @@ fun App() {
 					ButtonValues("7", generateNumberOnClick(7)),
 					ButtonValues("8", generateNumberOnClick(8)),
 					ButtonValues("9", generateNumberOnClick(9)),
-					ButtonValues("+/-") { currentNumber = -currentNumber },
+					ButtonValues("+/-") {
+						currentNumber = -currentNumber
+						isNegative = !isNegative
+					},
 					ButtonValues("0", generateNumberOnClick(0)),
 					ButtonValues(".") {
 						isDecimal = !isDecimal
