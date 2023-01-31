@@ -135,7 +135,7 @@ fun Operators(buttons: List<ButtonValues>) {
 @Composable
 fun CalculatorButton(text: String, onClick: () -> Unit) {
 	Button(
-		modifier = Modifier.padding(vertical = 5.dp, horizontal = 8.dp).aspectRatio(1f),
+		modifier = Modifier.aspectRatio(1f).padding(7.dp),
 		colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
 		onClick = onClick
 	) {
