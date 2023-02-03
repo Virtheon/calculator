@@ -100,18 +100,24 @@ fun App() {
 						ButtonValues("8", digitOnClick(8)),
 						ButtonValues("9", digitOnClick(9)),
 						ButtonValues("+/-") {
-							currentNumInfo = CurrentNumberValues(-currentNumInfo.value)
+							currentNumInfo = CurrentNumberValues(
+								-currentNumInfo.value,
+								isNegative = !currentNumInfo.isNegative,
+								isDecimal = currentNumInfo.isDecimal
+							)
 						},
 						ButtonValues("0", digitOnClick(0)),
 						ButtonValues(".") {
 							currentNumInfo =
 								if (currentNumInfo.isDecimal)
 									CurrentNumberValues(
-										currentNumInfo.value.setScale(0, RoundingMode.DOWN)
+										currentNumInfo.value.setScale(0, RoundingMode.DOWN),
+										isNegative = currentNumInfo.isNegative
 									)
 								else
 									CurrentNumberValues(
 										currentNumInfo.value,
+										isNegative = currentNumInfo.isNegative,
 										isDecimal = true
 									)
 						},
