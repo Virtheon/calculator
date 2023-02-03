@@ -14,11 +14,16 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import java.math.BigDecimal
-import java.math.MathContext
 import java.math.RoundingMode
 
 data class ButtonValues(val buttonText: String, val onClick: () -> Unit)
 data class Operator(val operatorStr: String, val operationFun: (BigDecimal, BigDecimal) -> BigDecimal)
+
+data class CurrentNumberValues(
+	val value: BigDecimal,
+	val isNegative: Boolean = (value < 0.bd),
+	val isDecimal: Boolean = (value.scale() > 0)
+)
 
 val Int.bd: BigDecimal
 	get() = this.toBigDecimal()
@@ -27,24 +32,22 @@ val Int.bd: BigDecimal
 @Preview
 fun App() {
 	MaterialTheme() {
-		var mathContext by remember { mutableStateOf(MathContext(0)) }
-		// TODO pack all this into one variable?
-		var currentNumber by remember { mutableStateOf(0.toBigDecimal(mathContext)) }
-		var isDecimal by remember { mutableStateOf(false) }
-		var isNegative by remember { mutableStateOf(false) }
+		// FIXME can't do 0.
+		var currentNumberInformation by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
 		var previousNumber: BigDecimal? by remember { mutableStateOf(null) }
 		var operator: Operator? by remember { mutableStateOf(null) }
 
 		fun digitOnClick(x: Int): () -> Unit = {
-			val signedX = (if (isNegative) -x else x).bd
+			val signedX = (if (currentNumberInformation.isNegative) -x else x).bd
 			val ten = 10.bd
-			currentNumber =
-				if (currentNumber == 0.bd)
+			val newNumber =
+				if (currentNumberInformation.value == 0.bd)
 					signedX
-				else if (isDecimal)
-					currentNumber + signedX.scaleByPowerOfTen(-(currentNumber.scale() + 1))
+				else if (currentNumberInformation.isDecimal)
+					currentNumberInformation.value + signedX.scaleByPowerOfTen(-(currentNumberInformation.value.scale() + 1))
 				else
-					currentNumber * ten + signedX
+					currentNumberInformation.value * ten + signedX
+			currentNumberInformation = CurrentNumberValues(newNumber)
 		}
 
 		fun operationOnClick(
@@ -52,16 +55,22 @@ fun App() {
 			operatorFunction: (BigDecimal, BigDecimal) -> BigDecimal
 		): (() -> Unit) = {
 			// TODO perform operation of operator is selected a second time
-			previousNumber = currentNumber
-			currentNumber = 0.bd
+			previousNumber = currentNumberInformation.value
+			currentNumberInformation = CurrentNumberValues(0.bd)
 			operator = Operator(operatorSymbol, operatorFunction)
-			isDecimal = false
-			isNegative = false
 		}
 
 		Column {
-			val possibleExtraNegative = if (isNegative && currentNumber.compareTo(0.bd) == 0) "-" else ""
-			val possibleExtraDot = if (isDecimal && currentNumber.scale() == 0) "." else ""
+			val possibleExtraNegative =
+				if (currentNumberInformation.isNegative && currentNumberInformation.value.compareTo(0.bd) == 0)
+					"-"
+				else
+					""
+			val possibleExtraDot =
+				if (currentNumberInformation.isDecimal && currentNumberInformation.value.scale() == 0)
+					"."
+				else
+					""
 			val topText =
 				if (previousNumber != null && operator != null)
 					previousNumber.toString() + " " + operator!!.operatorStr
@@ -74,7 +83,7 @@ fun App() {
 				fontSize = 30.sp
 			)
 			Text(
-				possibleExtraNegative + currentNumber.toString() + possibleExtraDot,
+				possibleExtraNegative + currentNumberInformation.value.toString() + possibleExtraDot,
 				fontSize = 50.sp,
 				modifier = Modifier.fillMaxWidth()
 			)
@@ -92,15 +101,20 @@ fun App() {
 						ButtonValues("8", digitOnClick(8)),
 						ButtonValues("9", digitOnClick(9)),
 						ButtonValues("+/-") {
-							currentNumber = -currentNumber
-							isNegative = !isNegative
+							currentNumberInformation = CurrentNumberValues(-currentNumberInformation.value)
 						},
 						ButtonValues("0", digitOnClick(0)),
 						ButtonValues(".") {
-							isDecimal = !isDecimal
-							if (!isDecimal) {
-								currentNumber = currentNumber.setScale(0, RoundingMode.DOWN)
-							}
+							currentNumberInformation =
+								if (currentNumberInformation.isDecimal)
+									CurrentNumberValues(
+										currentNumberInformation.value.setScale(0, RoundingMode.DOWN)
+									)
+								else
+									CurrentNumberValues(
+										currentNumberInformation.value,
+										isDecimal = true
+									)
 						},
 					)
 				)
@@ -113,12 +127,15 @@ fun App() {
 						ButtonValues("÷", operationOnClick("÷") { x, y -> x / y }),
 						ButtonValues("=") {
 							if (previousNumber != null && operator != null) {
-								currentNumber = operator!!.operationFun(previousNumber!!, currentNumber)
+								currentNumberInformation = CurrentNumberValues(
+									operator!!.operationFun(
+										previousNumber!!,
+										currentNumberInformation.value
+									).stripTrailingZeros()
+								)
 							}
 							previousNumber = null
 							operator = null
-							isDecimal = false
-							isNegative = false
 						}
 					)
 				)
