@@ -18,7 +18,6 @@ import java.math.RoundingMode
 
 data class ButtonValues(val buttonText: String, val onClick: () -> Unit)
 data class Operator(val operatorStr: String, val operationFun: (BigDecimal, BigDecimal) -> BigDecimal)
-
 data class CurrentNumberValues(
 	val value: BigDecimal,
 	val isNegative: Boolean = (value < 0.bd),
@@ -33,41 +32,41 @@ val Int.bd: BigDecimal
 fun App() {
 	MaterialTheme() {
 		// FIXME can't do 0.
-		var currentNumberInformation by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
+		var currentNumInfo by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
 		var previousNumber: BigDecimal? by remember { mutableStateOf(null) }
 		var operator: Operator? by remember { mutableStateOf(null) }
 
 		fun digitOnClick(x: Int): () -> Unit = {
-			val signedX = (if (currentNumberInformation.isNegative) -x else x).bd
+			val signedX = (if (currentNumInfo.isNegative) -x else x).bd
 			val ten = 10.bd
 			val newNumber =
-				if (currentNumberInformation.value == 0.bd)
+				if (currentNumInfo.value == 0.bd && !currentNumInfo.isDecimal)
 					signedX
-				else if (currentNumberInformation.isDecimal)
-					currentNumberInformation.value + signedX.scaleByPowerOfTen(-(currentNumberInformation.value.scale() + 1))
+				else if (currentNumInfo.isDecimal)
+					currentNumInfo.value + signedX.scaleByPowerOfTen(-(currentNumInfo.value.scale() + 1))
 				else
-					currentNumberInformation.value * ten + signedX
-			currentNumberInformation = CurrentNumberValues(newNumber)
+					currentNumInfo.value * ten + signedX
+			currentNumInfo = CurrentNumberValues(newNumber)
 		}
 
 		fun operationOnClick(
 			operatorSymbol: String,
 			operatorFunction: (BigDecimal, BigDecimal) -> BigDecimal
 		): (() -> Unit) = {
-			// TODO perform operation of operator is selected a second time
-			previousNumber = currentNumberInformation.value
-			currentNumberInformation = CurrentNumberValues(0.bd)
+			// TODO perform operation if operator is selected a second time
+			previousNumber = currentNumInfo.value
+			currentNumInfo = CurrentNumberValues(0.bd)
 			operator = Operator(operatorSymbol, operatorFunction)
 		}
 
 		Column {
 			val possibleExtraNegative =
-				if (currentNumberInformation.isNegative && currentNumberInformation.value.compareTo(0.bd) == 0)
+				if (currentNumInfo.isNegative && currentNumInfo.value.compareTo(0.bd) == 0)
 					"-"
 				else
 					""
 			val possibleExtraDot =
-				if (currentNumberInformation.isDecimal && currentNumberInformation.value.scale() == 0)
+				if (currentNumInfo.isDecimal && currentNumInfo.value.scale() == 0)
 					"."
 				else
 					""
@@ -83,7 +82,7 @@ fun App() {
 				fontSize = 30.sp
 			)
 			Text(
-				possibleExtraNegative + currentNumberInformation.value.toString() + possibleExtraDot,
+				possibleExtraNegative + currentNumInfo.value.toString() + possibleExtraDot,
 				fontSize = 50.sp,
 				modifier = Modifier.fillMaxWidth()
 			)
@@ -101,18 +100,18 @@ fun App() {
 						ButtonValues("8", digitOnClick(8)),
 						ButtonValues("9", digitOnClick(9)),
 						ButtonValues("+/-") {
-							currentNumberInformation = CurrentNumberValues(-currentNumberInformation.value)
+							currentNumInfo = CurrentNumberValues(-currentNumInfo.value)
 						},
 						ButtonValues("0", digitOnClick(0)),
 						ButtonValues(".") {
-							currentNumberInformation =
-								if (currentNumberInformation.isDecimal)
+							currentNumInfo =
+								if (currentNumInfo.isDecimal)
 									CurrentNumberValues(
-										currentNumberInformation.value.setScale(0, RoundingMode.DOWN)
+										currentNumInfo.value.setScale(0, RoundingMode.DOWN)
 									)
 								else
 									CurrentNumberValues(
-										currentNumberInformation.value,
+										currentNumInfo.value,
 										isDecimal = true
 									)
 						},
@@ -127,10 +126,10 @@ fun App() {
 						ButtonValues("÷", operationOnClick("÷") { x, y -> x / y }),
 						ButtonValues("=") {
 							if (previousNumber != null && operator != null) {
-								currentNumberInformation = CurrentNumberValues(
+								currentNumInfo = CurrentNumberValues(
 									operator!!.operationFun(
 										previousNumber!!,
-										currentNumberInformation.value
+										currentNumInfo.value
 									).stripTrailingZeros()
 								)
 							}
