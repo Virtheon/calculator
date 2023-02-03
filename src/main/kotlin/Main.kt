@@ -6,8 +6,10 @@ import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
@@ -70,21 +72,24 @@ fun App() {
 					"."
 				else
 					""
-			val topText =
+			val previousNumberAndOperatorStr =
 				if (previousNumber != null && operator != null)
 					previousNumber.toString() + " " + operator!!.operatorStr
 				else
 					""
+			val currentNumberStr = possibleExtraNegative + currentNumInfo.value.toString() + possibleExtraDot
 
 			Text(
-				topText,
+				previousNumberAndOperatorStr,
 				color = Color.Gray,
-				fontSize = 30.sp
+				fontSize = 30.sp,
+				modifier = Modifier.padding(start = 10.dp)
 			)
 			Text(
-				possibleExtraNegative + currentNumInfo.value.toString() + possibleExtraDot,
+				currentNumberStr,
 				fontSize = 50.sp,
-				modifier = Modifier.fillMaxWidth()
+				textAlign = TextAlign.End,
+				modifier = Modifier.fillMaxWidth().padding(end = 15.dp)
 			)
 			Row {
 				NumberPad(
