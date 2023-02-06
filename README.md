@@ -3,13 +3,13 @@ A simple GUI calculator made with Jetpack Compose.
 
 ![](./screenshot.png)
 
-### Build
+### Building the Project
 
 ```sh
 ./gradlew :build
 ```
 
-### Run
+### Running the Project
 
 ```sh
 ./gradlew :run
