@@ -48,6 +48,7 @@ val Int.bd: BigDecimal
 fun App() {
 	MaterialTheme() {
 		var currentNumInfo by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
+		// TODO add two previous numbers
 		var previousNumber: BigDecimal? by remember { mutableStateOf(null) }
 		var operator: Operator? by remember { mutableStateOf(null) }
 
@@ -104,6 +105,7 @@ fun App() {
 				textAlign = TextAlign.End,
 				modifier = Modifier.fillMaxWidth().padding(end = 15.dp)
 			)
+			// TODO add new row with exponent, root, factorial and delete button
 			Row {
 				NumberPad(
 					Modifier.weight(3f),
