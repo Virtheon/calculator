@@ -47,7 +47,6 @@ val Int.bd: BigDecimal
 @Preview
 fun App() {
 	MaterialTheme() {
-		// FIXME can't do 0.
 		var currentNumInfo by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
 		var previousNumber: BigDecimal? by remember { mutableStateOf(null) }
 		var operator: Operator? by remember { mutableStateOf(null) }
@@ -142,7 +141,7 @@ fun App() {
 						},
 					)
 				)
-				Operators(
+				OperatorColumn(
 					Modifier.weight(1f),
 					listOf(
 						ButtonValues("+", operationOnClick("+") { x, y -> x + y }),
@@ -187,7 +186,7 @@ fun NumberPad(modifier: Modifier, buttons: List<ButtonValues>) {
 }
 
 @Composable
-fun Operators(modifier: Modifier, buttons: List<ButtonValues>) {
+fun OperatorColumn(modifier: Modifier, buttons: List<ButtonValues>) {
 	Column(
 		modifier = modifier,
 	) {
