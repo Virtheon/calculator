@@ -34,55 +34,67 @@ import java.math.RoundingMode
 
 data class ButtonValues(val buttonText: String, val onClick: () -> Unit)
 data class Operator(val operatorStr: String, val operationFun: (BigDecimal, BigDecimal) -> BigDecimal)
-data class CurrentNumberValues(
-	val value: BigDecimal,
-	val isNegative: Boolean = (value < 0.bd),
-	val isDecimal: Boolean = (value.scale() > 0)
+// TODO add flag for "= " before number
+data class FocusNumberAndFlags(
+	val number: BigDecimal,
+	val isNegative: Boolean = (number < 0.bd),
+	val isDecimal: Boolean = (number.scale() > 0)
 )
 
 val Int.bd: BigDecimal
 	get() = this.toBigDecimal()
 
+// TODO dynamically calculate based on how much screen is available or how many digits the number has total
+const val MAX_DECIMAL_DIGITS = 11 // based on how many fit on the screen
+
 @Composable
 @Preview
 fun App() {
 	MaterialTheme() {
-		var currentNumInfo by remember { mutableStateOf(CurrentNumberValues(0.bd)) }
-		// TODO add two previous numbers
+		var focusNumAndFlags by remember { mutableStateOf(FocusNumberAndFlags(0.bd)) }
+		// TODO change previous number and operator to expression
 		var previousNumber: BigDecimal? by remember { mutableStateOf(null) }
 		var operator: Operator? by remember { mutableStateOf(null) }
 
+		fun evaluateExpression() =
+			if (previousNumber != null && operator != null)
+				operator!!.operationFun(
+					previousNumber!!,
+					focusNumAndFlags.number
+				).stripTrailingZeros() // to prevent for example 5.1 + 0.9 = 6.0
+			else
+				focusNumAndFlags.number
+
 		fun digitOnClick(x: Int): () -> Unit = {
-			val signedX = (if (currentNumInfo.isNegative) -x else x).bd
+			val signedX = (if (focusNumAndFlags.isNegative) -x else x).bd
 			val ten = 10.bd
 			val newNumber =
-				if (currentNumInfo.value == 0.bd && !currentNumInfo.isDecimal)
+				if (focusNumAndFlags.number == 0.bd && !focusNumAndFlags.isDecimal)
 					signedX
-				else if (currentNumInfo.isDecimal)
-					currentNumInfo.value + signedX.scaleByPowerOfTen(-(currentNumInfo.value.scale() + 1))
+				else if (focusNumAndFlags.isDecimal && focusNumAndFlags.number.scale() < MAX_DECIMAL_DIGITS)
+					focusNumAndFlags.number + signedX.scaleByPowerOfTen(-(focusNumAndFlags.number.scale() + 1))
 				else
-					currentNumInfo.value * ten + signedX
-			currentNumInfo = CurrentNumberValues(newNumber)
+					focusNumAndFlags.number * ten + signedX
+			focusNumAndFlags = FocusNumberAndFlags(newNumber)
 		}
 
 		fun operationOnClick(
 			operatorSymbol: String,
 			operatorFunction: (BigDecimal, BigDecimal) -> BigDecimal
 		): (() -> Unit) = {
-			// TODO perform operation if operator is selected a second time
-			previousNumber = currentNumInfo.value
-			currentNumInfo = CurrentNumberValues(0.bd)
+			previousNumber = evaluateExpression()
+			focusNumAndFlags = FocusNumberAndFlags(0.bd)
 			operator = Operator(operatorSymbol, operatorFunction)
 		}
 
 		Column {
 			val possibleExtraNegative =
-				if (currentNumInfo.isNegative && currentNumInfo.value.compareTo(0.bd) == 0)
+				if (focusNumAndFlags.isNegative && focusNumAndFlags.number.compareTo(0.bd) == 0)
 					"-"
 				else
 					""
 			val possibleExtraDot =
-				if (currentNumInfo.isDecimal && currentNumInfo.value.scale() == 0)
+				if (focusNumAndFlags.isDecimal && focusNumAndFlags.number.scale() == 0)
 					"."
 				else
 					""
@@ -91,7 +103,7 @@ fun App() {
 					previousNumber.toString() + " " + operator!!.operatorStr
 				else
 					""
-			val currentNumberStr = possibleExtraNegative + currentNumInfo.value.toString() + possibleExtraDot
+			val currentNumberStr = possibleExtraNegative + focusNumAndFlags.number.toString() + possibleExtraDot
 
 			Text(
 				previousNumberAndOperatorStr,
@@ -120,24 +132,24 @@ fun App() {
 						ButtonValues("8", digitOnClick(8)),
 						ButtonValues("9", digitOnClick(9)),
 						ButtonValues("+/-") {
-							currentNumInfo = CurrentNumberValues(
-								-currentNumInfo.value,
-								isNegative = !currentNumInfo.isNegative,
-								isDecimal = currentNumInfo.isDecimal
+							focusNumAndFlags = FocusNumberAndFlags(
+								-focusNumAndFlags.number,
+								isNegative = !focusNumAndFlags.isNegative,
+								isDecimal = focusNumAndFlags.isDecimal
 							)
 						},
 						ButtonValues("0", digitOnClick(0)),
 						ButtonValues(".") {
-							currentNumInfo =
-								if (currentNumInfo.isDecimal)
-									CurrentNumberValues(
-										currentNumInfo.value.setScale(0, RoundingMode.DOWN),
-										isNegative = currentNumInfo.isNegative
+							focusNumAndFlags =
+								if (focusNumAndFlags.isDecimal)
+									FocusNumberAndFlags(
+										focusNumAndFlags.number.setScale(0, RoundingMode.DOWN),
+										isNegative = focusNumAndFlags.isNegative
 									)
 								else
-									CurrentNumberValues(
-										currentNumInfo.value,
-										isNegative = currentNumInfo.isNegative,
+									FocusNumberAndFlags(
+										focusNumAndFlags.number,
+										isNegative = focusNumAndFlags.isNegative,
 										isDecimal = true
 									)
 						},
@@ -149,16 +161,13 @@ fun App() {
 						ButtonValues("+", operationOnClick("+") { x, y -> x + y }),
 						ButtonValues("-", operationOnClick("-") { x, y -> x - y }),
 						ButtonValues("×", operationOnClick("×") { x, y -> x * y }),
-						ButtonValues("÷", operationOnClick("÷") { x, y -> x / y }),
-						ButtonValues("=") {
-							if (previousNumber != null && operator != null) {
-								currentNumInfo = CurrentNumberValues(
-									operator!!.operationFun(
-										previousNumber!!,
-										currentNumInfo.value
-									).stripTrailingZeros()
-								)
+						ButtonValues("÷",
+							operationOnClick("÷") { x, y ->
+								x.divide(y, MAX_DECIMAL_DIGITS, RoundingMode.HALF_UP).stripTrailingZeros()
 							}
+						),
+						ButtonValues("=") {
+							focusNumAndFlags = FocusNumberAndFlags(evaluateExpression())
 							previousNumber = null
 							operator = null
 						}
